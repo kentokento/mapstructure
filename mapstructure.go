@@ -80,6 +80,10 @@ type DecoderConfig struct {
 	//
 	WeaklyTypedInput bool
 
+	// If StringToBoolTrueMap is not nil, decoder will use this, when string to bool.
+	// If value exists in StringToBoolTrueMap then true else false
+	StringToBoolTrueMap map[string]struct{}
+
 	// Metadata is the struct that will contain extra metadata about
 	// the decoding. If this is nil, then no metadata will be tracked.
 	Metadata *Metadata
@@ -479,7 +483,12 @@ func (d *Decoder) decodeBool(name string, data interface{}, val reflect.Value) e
 		} else if dataVal.String() == "" {
 			val.SetBool(false)
 		} else {
-			return fmt.Errorf("cannot parse '%s' as bool: %s", name, err)
+			if d.config.StringToBoolTrueMap != nil {
+				_, has := d.config.StringToBoolTrueMap[dataVal.String()]
+				val.SetBool(has)
+			} else {
+				return fmt.Errorf("cannot parse '%s' as bool: %s", name, err)
+			}
 		}
 	default:
 		return fmt.Errorf(
